@@ -4,3 +4,5 @@ scikit-learn
 matplotlib
 wandb
 tqdm
+jupyter
+pylint
