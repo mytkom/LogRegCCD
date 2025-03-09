@@ -1,9 +1,11 @@
-numpy
-pandas
-scikit-learn
-matplotlib
+numpy~=2.0.2
+pandas~=2.2.3
+scikit-learn~=1.6.1
+matplotlib~=3.10.1
 wandb
 tqdm
 jupyter
 pylint
-seaborn
+seaborn~=0.13.2
+missingno~=0.5.2
+tensorflow~=2.18.0
