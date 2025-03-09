@@ -51,4 +51,3 @@ def plot_tsne(dataset, perplexity=30):
         hue=dataset.labels, palette='viridis')
     plt.title("t-SNE Visualization")
     plt.show()
-    
