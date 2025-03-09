@@ -1,3 +1,5 @@
+"""Module providing functions for common interface for datasets."""
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -5,6 +7,7 @@ from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 class DatasetInterface:
+    """Dataset interface"""
 
     def __init__(self):
         self.data = None
@@ -20,12 +23,11 @@ class DatasetInterface:
         """
         Fetch dataset from OpenML.
         """
-        X, y = fetch_openml(dataset_name, version=1, return_X_y=True, as_frame=True)
-        self.data = X
-        self.labels = y
+        self.data, self.labels = fetch_openml(dataset_name, version=1, return_X_y=True, as_frame=True)
         return self
     
-    def preprocess_data(self, convert_to_binary=True, encode_labels=True, standardize_data=True, missing_values_strategy='drop', remove_correlated_features=True, add_dummy_features=True):
+    def preprocess_data(self, convert_to_binary=True, encode_labels=True, standardize_data=True, missing_values_strategy='drop', \
+            remove_correlated_features=True, add_dummy_features=True):
         """
         Preprocess the dataset.
         """
@@ -95,7 +97,8 @@ class DatasetInterface:
         Add dummy features by permuting existing features.
         """
         for i in range(num_dummy_features):
-            dummy_feature = self.data.iloc[:, i % self.data.shape[1]].sample(frac=1).reset_index(drop=True)
+            dummy_feature = self.data.iloc[:, i % self.data.shape[1]] \
+                .sample(frac=1).reset_index(drop=True)
             self.data[f'dummy_{i}'] = dummy_feature
         return self
 
@@ -108,6 +111,9 @@ class DatasetInterface:
         return self
 
     def convert2binary(self):
+        """
+        Convert dataset labels to binary values.
+        """
         if len(np.unique(self.labels)) > 2:
             self.labels = (self.labels == self.labels[0]).astype(int)  
 

@@ -1,5 +1,8 @@
+"""Module providing functions for Exploratory Data Analysis."""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.manifold import TSNE
 
 def plot_missing_values(dataset):
     """Plot a heatmap of missing values in the dataset."""
@@ -41,10 +44,11 @@ def plot_pairplot(dataset, sample_size=100):
 
 def plot_tsne(dataset, perplexity=30):
     """Plot t-SNE visualization of the dataset."""
-    from sklearn.manifold import TSNE
     tsne = TSNE(n_components=2, perplexity=perplexity, random_state=42)
     tsne_results = tsne.fit_transform(dataset.data)
     plt.figure(figsize=(10, 8))
-    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], hue=dataset.labels, palette='viridis')
+    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], \
+        hue=dataset.labels, palette='viridis')
     plt.title("t-SNE Visualization")
     plt.show()
+    
