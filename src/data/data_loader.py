@@ -38,7 +38,8 @@ class SyntheticDataLoader(DataLoader):
         self.d = d
         self.g = g
 
-    # TODO check - nie jestem pewna czy to jest dobrze, dodałam jako przykład factory 
+    # pylint: disable=fixme
+    # TODO check - nie jestem pewna czy to jest dobrze, dodałam jako przykład factory
     def load_data(self):
         """Generate synthetic data."""
 
