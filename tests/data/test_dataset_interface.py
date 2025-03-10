@@ -4,18 +4,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from pandas import testing as tm
-from src.dataset_interface import DataInterface, DatasetInterface
-
-def test_fetch_from_openml():
-    """Test fetching data from OpenML."""
-    data_interface = DataInterface()
-    data_interface.fetch_from_openml("iris")
-
-    assert data_interface.data.data is not None
-    assert data_interface.data.labels is not None
-    assert isinstance(data_interface.data, DatasetInterface)
-    assert isinstance(data_interface.data.data, pd.DataFrame)
-    assert isinstance(data_interface.data.labels, pd.Series)
+from src.data.dataset_interface import DataInterface
 
 def test_handle_missing_values_mean():
     """Test handling missing values with the 'mean' strategy."""

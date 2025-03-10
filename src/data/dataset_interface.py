@@ -4,7 +4,6 @@ import dataclasses
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 
@@ -20,20 +19,13 @@ class DatasetInterface:
 class DataInterface:
     """Dataset interface"""
 
-    def __init__(self):
+    def __init__(self, data_loader=None):
         self.data = DatasetInterface()
+        if data_loader:
+            self.data.data, self.data.labels = data_loader.load_data()
         self.train_data = DatasetInterface()
         self.val_data = DatasetInterface()
         self.test_data = DatasetInterface()
-
-    def fetch_from_openml(self, dataset_name):
-        """Fetch dataset from OpenML."""
-        data, labels = fetch_openml(
-            dataset_name, version=1, return_X_y=True, as_frame=True
-        )
-        self.data.data = data
-        self.data.labels = labels
-        return self
 
     def preprocess_data(self, *, missing_values_strategy='mean'):
         """
