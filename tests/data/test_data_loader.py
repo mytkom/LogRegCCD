@@ -17,7 +17,7 @@ def test_openml_data_loader():
 
 def test_synthetic_data_loader():
     """Test synthetic data generation."""
-    p, n, d, g = 0.5, 1000, 10, 0.5
+    p, n, d, g = 0.5, 10000, 10, 0.5
     data_interface = DataInterface(SyntheticDataLoader(p, n, d, g))
 
     assert data_interface.data.data.shape == (n, d)
