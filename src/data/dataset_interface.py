@@ -27,7 +27,7 @@ class DataInterface:
         self.val_data = DatasetInterface()
         self.test_data = DatasetInterface()
 
-    def preprocess_data(self, *, missing_values_strategy='mean'):
+    def preprocess_data(self, missing_values_strategy='mean', ratio=0.5):
         """
         Preprocess the dataset.
         """
@@ -38,7 +38,7 @@ class DataInterface:
 
         num_observations = len(self.data.data)
         num_features = self.data.data.shape[1]
-        required_features = int(0.5 * num_observations)
+        required_features = int(ratio * num_observations)
         if num_features < required_features:
             num_dummy_features = required_features - num_features
             print(
@@ -50,7 +50,7 @@ class DataInterface:
 
         return self
 
-    def handle_missing_values(self, *, strategy='drop', default_value=None):
+    def handle_missing_values(self, strategy='drop', default_value=None, reset_index=True):
         """
         Handle missing values in the dataset.
         """
@@ -68,14 +68,17 @@ class DataInterface:
                     "Default value must be provided for 'default' strategy."
                 )
         elif strategy == 'drop':
-            null_indices = self.data.data[self.data.data.isnull().any(axis=1)].index
-            self.data.data = self.data.data.drop(null_indices)
-            self.data.labels = self.data.labels.drop(null_indices)
+            mask = ~self.data.data.isnull().any(axis=1)
+            self.data.data = self.data.data[mask]
+            self.data.labels = self.data.labels[mask]
+            if reset_index:
+                self.data.data.reset_index(drop=True, inplace=True)
+                self.data.labels.reset_index(drop=True, inplace=True)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
         return self
 
-    def remove_correlated_features(self, *, threshold=0.95):
+    def remove_correlated_features(self, threshold=0.95):
         """
         Remove correlated features based on a given threshold.
         """
@@ -91,7 +94,7 @@ class DataInterface:
         print(f"Removed {len(to_drop)} correlated features.")
         return self
 
-    def add_dummy_features(self, *, num_dummy_features=10):
+    def add_dummy_features(self, num_dummy_features=10):
         """
         Add dummy features by permuting existing features.
         """
@@ -111,12 +114,37 @@ class DataInterface:
         )
         return self
 
-    def convert2binary(self):
+    def convert2binary(self, strategy='default', in_labels=None, reset_index=True):
         """
         Convert dataset labels to binary values.
         """
         if len(np.unique(self.data.labels)) > 2:
-            self.data.labels = (self.data.labels == self.data.labels[0]).astype(int)
+
+            if strategy == 'default':
+                self.data.labels = (self.data.labels == self.data.labels[0]).astype(int)
+
+            elif strategy in ('most common', 'chosen'):
+
+                if strategy == 'most common':
+                    label_counts = self.data.labels.value_counts()
+                    in_labels = label_counts.index[:2]
+                elif in_labels is None:
+                    in_labels = [0, 1]
+
+                mask = self.data.labels.isin(in_labels)
+                self.data.data = self.data.data[mask]
+                self.data.labels = self.data.labels[mask]
+
+                self.data.labels = (self.data.labels != in_labels[0]).astype(int)
+
+                if reset_index:
+                    self.data.data.reset_index(drop=True, inplace=True)
+                    self.data.labels.reset_index(drop=True, inplace=True)
+
+            else:
+                raise ValueError(f"Unknown strategy: {strategy}")
+
+        return self
 
     def encode_labels(self):
         """
@@ -125,7 +153,7 @@ class DataInterface:
         label_encoder = LabelEncoder()
         self.data.labels = pd.Series(label_encoder.fit_transform(self.data.labels))
 
-    def split_data(self, *, test_size=0.2, val_size=0.1, random_state=42):
+    def split_data(self, test_size=0.2, val_size=0.1, random_state=42):
         """
         Split data into train, test, and validation sets.
         """

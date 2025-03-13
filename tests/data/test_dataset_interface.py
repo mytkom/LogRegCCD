@@ -26,7 +26,8 @@ def test_handle_missing_values_drop():
     data_interface = DataInterface()
     data_interface.data.data = pd.DataFrame({
         'feature1': [1, 2, np.nan, 4],
-        'feature2': [5, np.nan, 7, 8]
+        'feature2': [5, np.nan, 7, 8],
+        'feature3': [9, np.nan, 11, 12],
     })
     data_interface.data.labels = pd.Series([0, 1, 0, 1])
 
@@ -34,9 +35,20 @@ def test_handle_missing_values_drop():
 
     assert data_interface.data.data.shape[0] == 2
     assert data_interface.data.labels.shape[0] == 2
+    assert 'feature1' in data_interface.data.data.columns
+    assert 'feature2' in data_interface.data.data.columns
+    assert 'feature3' in data_interface.data.data.columns
+    tm.assert_frame_equal(
+        data_interface.data.data,
+        pd.DataFrame({
+            'feature1': [1., 4.],
+            'feature2': [5., 8.],
+            'feature3': [9., 12.],
+        })
+    )
 
-def test_convert2binary():
-    """Test converting labels to binary values."""
+def test_convert2binary_default():
+    """Test converting labels to binary values with the 'default' strategy."""
     data_interface = DataInterface()
     data_interface.data.labels = pd.Series([0, 1, 2, 0])
 
@@ -44,6 +56,48 @@ def test_convert2binary():
 
     assert set(data_interface.data.labels.unique()) == {0, 1}
     tm.assert_series_equal(data_interface.data.labels, pd.Series([1, 0, 0, 1]))
+
+def test_convert2binary_most_common():
+    """Test converting labels to binary values with the 'most common' strategy."""
+    data_interface = DataInterface()
+    data_interface.data.data = pd.DataFrame({
+        'feature1': [1, 2, 3, 4, 5, 6],
+        'feature2': [7, 8, 9, 10, 11, 12],
+    })
+    data_interface.data.labels = pd.Series([2, 1, 2, 0, 2, 0])
+
+    data_interface.convert2binary(strategy='most common')
+
+    assert set(data_interface.data.labels.unique()) == {0, 1}
+    tm.assert_series_equal(data_interface.data.labels, pd.Series([0, 0, 1, 0, 1]))
+    tm.assert_frame_equal(
+        data_interface.data.data,
+        pd.DataFrame({
+            'feature1': [1, 3, 4, 5, 6],
+            'feature2': [7, 9, 10, 11, 12],
+        })
+    )
+
+def test_convert2binary_chosen():
+    """Test converting labels to binary values with the 'chosen' strategy."""
+    data_interface = DataInterface()
+    data_interface.data.data = pd.DataFrame({
+        'feature1': [1, 2, 3, 4, 5, 6],
+        'feature2': [7, 8, 9, 10, 11, 12],
+    })
+    data_interface.data.labels = pd.Series([2, 1, 2, 0, 2, 0])
+
+    data_interface.convert2binary(strategy='chosen')
+
+    assert set(data_interface.data.labels.unique()) == {0, 1}
+    tm.assert_series_equal(data_interface.data.labels, pd.Series([1, 0, 0]))
+    tm.assert_frame_equal(
+        data_interface.data.data,
+        pd.DataFrame({
+            'feature1': [2, 4, 6],
+            'feature2': [8, 10, 12],
+        })
+    )
 
 def test_encode_labels():
     """Test encoding labels to numeric values."""

@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from sklearn.datasets import fetch_openml
 import numpy as np
 import pandas as pd
-from scipy.stats import multivariate_normal
 
 class DataLoader(ABC):
     """Abstract class for loading data."""
@@ -18,7 +17,7 @@ class DataLoader(ABC):
 class OpenMLDataLoader(DataLoader):
     """OpenML data creator."""
 
-    def __init__(self, *, dataset_name, version=1):
+    def __init__(self, dataset_name, version=1):
         self.dataset_name = dataset_name
         self.version = version
 
@@ -33,6 +32,13 @@ class SyntheticDataLoader(DataLoader):
     """Synthetic data creator."""
 
     def __init__(self, p, n, d, g):
+        """
+        Parameters:
+        - p: Class prior probability for Y=1.
+        - n: Number of observations.
+        - d: Number of features.
+        - g: Covariance parameter for the multivariate normal distribution.
+        """
         self.p = p
         self.n = n
         self.d = d
@@ -56,7 +62,7 @@ class SyntheticDataLoader(DataLoader):
                 mean = np.zeros(self.d)
             else:
                 mean = np.array([1 / (k + 1) for k in range(self.d)])
-            data[i, :] = multivariate_normal.rvs(mean=mean, cov=cov_matrix)
+            data[i, :] = np.random.multivariate_normal(mean=mean, cov=cov_matrix)
 
         data = pd.DataFrame(data, columns=[f'feature_{i}' for i in range(self.d)])
         return data, labels

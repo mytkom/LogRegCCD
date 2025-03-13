@@ -42,9 +42,9 @@ def plot_pairplot(dataset, sample_size=100):
     plt.suptitle("Pairwise Feature Relationships", y=1.02)
     plt.show()
 
-def plot_tsne(dataset, perplexity=30):
+def plot_tsne(dataset, perplexity=30, random_state=42):
     """Plot t-SNE visualization of the dataset."""
-    tsne = TSNE(n_components=2, perplexity=perplexity, random_state=42)
+    tsne = TSNE(n_components=2, perplexity=perplexity, random_state=random_state)
     tsne_results = tsne.fit_transform(dataset.data)
     plt.figure(figsize=(10, 8))
     sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], \
