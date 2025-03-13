@@ -27,12 +27,13 @@ class DataInterface:
         self.val_data = DatasetInterface()
         self.test_data = DatasetInterface()
 
-    def preprocess_data(self, missing_values_strategy='mean', ratio=0.5):
+    def preprocess_data(self, missing_values_strategy='mean', ratio=0.5, encode_labels=False):
         """
         Preprocess the dataset.
         """
         self.handle_missing_values(strategy=missing_values_strategy)
-        self.encode_labels()
+        if encode_labels:
+            self.encode_labels()
         self.convert2binary()
         self.remove_correlated_features()
 
@@ -67,13 +68,15 @@ class DataInterface:
                 raise ValueError(
                     "Default value must be provided for 'default' strategy."
                 )
-        elif strategy == 'drop':
+        elif strategy == 'drop observations':
             mask = ~self.data.data.isnull().any(axis=1)
             self.data.data = self.data.data[mask]
             self.data.labels = self.data.labels[mask]
             if reset_index:
                 self.data.data.reset_index(drop=True, inplace=True)
                 self.data.labels.reset_index(drop=True, inplace=True)
+        elif strategy == 'drop features':
+            self.data.data = self.data.data.dropna(axis=1)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
         return self
@@ -98,10 +101,15 @@ class DataInterface:
         """
         Add dummy features by permuting existing features.
         """
+        dummy_features = []
+
         for i in range(num_dummy_features):
             dummy_feature = self.data.data.iloc[:, i % self.data.data.shape[1]] \
-                .sample(frac=1).reset_index(drop=True)
-            self.data.data[f'dummy_{i}'] = dummy_feature
+                .sample(frac=1, random_state=i).reset_index(drop=True)
+            dummy_features.append(dummy_feature.rename(f'dummy_{i}'))
+
+        self.data.data = pd.concat([self.data.data] + dummy_features, axis=1)
+
         return self
 
     def standardize_data(self):
@@ -121,7 +129,8 @@ class DataInterface:
         if len(np.unique(self.data.labels)) > 2:
 
             if strategy == 'default':
-                self.data.labels = (self.data.labels == self.data.labels[0]).astype(int)
+                most_common_label = self.data.labels.value_counts().idxmax()
+                self.data.labels = (self.data.labels == most_common_label).astype(int)
 
             elif strategy in ('most common', 'chosen'):
 
@@ -152,6 +161,8 @@ class DataInterface:
         """
         label_encoder = LabelEncoder()
         self.data.labels = pd.Series(label_encoder.fit_transform(self.data.labels))
+        return self
+
 
     def split_data(self, test_size=0.2, val_size=0.1, random_state=42):
         """
@@ -162,11 +173,13 @@ class DataInterface:
             self.data.data, self.data.labels, test_size=test_size, random_state=random_state
         )
 
-        self.train_data.data, self.val_data.data, \
-        self.train_data.labels, self.val_data.labels = train_test_split(
-            self.train_data.data, self.train_data.labels, test_size=val_size, \
-                random_state=random_state
-        )
+        if val_size > 0:
+            self.train_data.data, self.val_data.data, \
+            self.train_data.labels, self.val_data.labels = train_test_split(
+                self.train_data.data, self.train_data.labels, test_size=val_size, \
+                    random_state=random_state
+            )
+
         return self
 
     def get_data(self):

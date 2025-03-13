@@ -2,7 +2,60 @@
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+import numpy as np
 from sklearn.manifold import TSNE
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.decomposition import PCA
+
+def print_basic_info(dataset):
+    """
+    Print basic info about dataset.
+    """
+    print("\nDataset shape:")
+    print(dataset.data.shape)
+
+    print("\nDataset features count:")
+    print(dataset.data.shape[1])
+
+    print("\nDataset observation count:")
+    print(dataset.data.shape[0])
+
+    print("\nDataset description:")
+    print(dataset.data.describe())
+
+    print("\nDataset info:")
+    print(dataset.data.info())
+
+    print("\nDataset missing values count:")
+    print(dataset.data.isnull().sum().sum())
+
+    print("\nDataset overview:")
+    print(dataset.data.head())
+
+    print("\nLabels description:")
+    print(dataset.labels.describe())
+
+    print("\nLabels info:")
+    print(dataset.labels.info())
+
+    print("\nLabels missing values count:")
+    print(dataset.labels.isnull().sum().sum())
+
+def print_target_distribution_info(dataset):
+    """
+    Print info about distribution of labels.
+    """
+    class_distribution = dataset.labels.value_counts()
+    class_percentage = dataset.labels.value_counts(normalize=True) * 100
+
+    class_distribution_df = pd.DataFrame({
+        'Count': class_distribution,
+        'Percentage': class_percentage
+    })
+
+    print(class_distribution_df)
 
 def figure_missing_values(dataset, figsize=(10, 6)):
     """Generate a heatmap of missing values in the dataset."""
@@ -20,19 +73,36 @@ def figure_target_distribution(dataset, figsize=(8, 6)):
     ax.set_ylabel("Count")
     return fig
 
-def figure_feature_distributions(dataset, figsize=(15, 15)):
-    """Generate distributions of all features."""
+def figure_feature_distributions(dataset, num_features=5, figsize=(15, 15)):
+    """Generate distributions of a random subset of features.."""
+
+    if num_features is not None:
+        selected_features = np.random.choice(dataset.data.columns, num_features, replace=False)
+        dataset = dataset.data[selected_features]
+    else:
+        dataset = dataset.data
+
     fig = plt.figure(figsize=figsize)
-    dataset.data.hist(bins=30, figsize=figsize)
+    dataset.hist(bins=30, figsize=figsize)
     plt.suptitle("Feature Distributions")
     return fig
 
-def figure_correlation_matrix(dataset, figsize=(12, 10)):
-    """Generate a correlation matrix for the features."""
+def figure_correlation_matrix(dataset, num_features=None, figsize=(12, 10)):
+    """
+    Generate a correlation matrix for a random subset of features.
+    """
+
+    if num_features is not None:
+        selected_features = np.random.choice(dataset.data.columns, num_features, replace=False)
+        dataset = dataset.data[selected_features]
+    else:
+        dataset = dataset.data
+
     fig, ax = plt.subplots(figsize=figsize)
-    corr_matrix = dataset.data.corr()
+    corr_matrix = dataset.corr()
     sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', vmin=-1, vmax=1, ax=ax)
     ax.set_title("Feature Correlation Matrix")
+
     return fig
 
 def figure_pairplot(dataset, sample_size=100):
@@ -56,3 +126,45 @@ def figure_tsne(dataset, perplexity=30, random_state=42, figsize=(10, 8)):
     )
     ax.set_title("t-SNE Visualization")
     return fig
+
+def feature_variance_explained(dataset, n_components=None):
+    """
+    Determmines how the features explain the variance.
+    """
+    pca = PCA(n_components=n_components)
+    pca.fit(dataset.data)
+
+    variance_explained = pca.explained_variance_ratio_
+    components = pca.components_
+
+    feature_importance = pd.DataFrame(
+        abs(components.T) @ variance_explained,
+        index=dataset.data.columns,
+        columns=["Variance Explained"]
+    )
+
+    return feature_importance.sort_values(by="Variance Explained", ascending=False)
+
+def train_logistic_regression(
+        dataset, regularization_type=None, c=1.0, solver='liblinear', max_iter=500
+    ):
+    """
+    Test logistic regression performance for a given dataset.
+    """
+
+    if regularization_type == 'l1':
+        model = LogisticRegression(penalty='l1', solver=solver, C=c, max_iter=max_iter)
+    else:
+        model = LogisticRegression(solver=solver, max_iter=max_iter)
+
+    model.fit(dataset.train_data.data, dataset.train_data.labels)
+    y_pred = model.predict(dataset.test_data.data)
+
+    print(f"{regularization_type if regularization_type else 'No regularization'}:")
+    print(f'Accuracy: {accuracy_score(dataset.test_data.labels, y_pred)}')
+    print("Classification report:")
+    print(classification_report(dataset.test_data.labels, y_pred))
+    print("Confiusion matrix:")
+    print(confusion_matrix(dataset.test_data.labels, y_pred))
+
+    return model

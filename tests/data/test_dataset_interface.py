@@ -21,8 +21,8 @@ def test_handle_missing_values_mean():
     assert data_interface.data.data.iloc[2, 0] == pytest.approx(2.333, 0.001)
     assert data_interface.data.data.iloc[1, 1] == pytest.approx(6.666, 0.001)
 
-def test_handle_missing_values_drop():
-    """Test handling missing values with the 'drop' strategy."""
+def test_handle_missing_values_drop_observations():
+    """Test handling missing values with the 'drop observations' strategy."""
     data_interface = DataInterface()
     data_interface.data.data = pd.DataFrame({
         'feature1': [1, 2, np.nan, 4],
@@ -31,7 +31,7 @@ def test_handle_missing_values_drop():
     })
     data_interface.data.labels = pd.Series([0, 1, 0, 1])
 
-    data_interface.handle_missing_values(strategy='drop')
+    data_interface.handle_missing_values(strategy='drop observations')
 
     assert data_interface.data.data.shape[0] == 2
     assert data_interface.data.labels.shape[0] == 2
@@ -47,15 +47,37 @@ def test_handle_missing_values_drop():
         })
     )
 
+def test_handle_missing_values_drop_features():
+    """Test handling missing values with the 'drop features' strategy."""
+    data_interface = DataInterface()
+    data_interface.data.data = pd.DataFrame({
+        'feature1': [1, 2, np.nan, 4],
+        'feature2': [5, np.nan, np.nan, 8],
+        'feature3': [9, 10, 11, 12],
+    })
+    data_interface.data.labels = pd.Series([0, 1, 0, 1])
+
+    data_interface.handle_missing_values(strategy='drop features')
+
+    assert data_interface.data.data.shape[0] == 4
+    assert data_interface.data.labels.shape[0] == 4
+    assert 'feature3' in data_interface.data.data.columns
+    tm.assert_frame_equal(
+        data_interface.data.data,
+        pd.DataFrame({
+            'feature3': [9, 10, 11, 12],
+        })
+    )
+
 def test_convert2binary_default():
     """Test converting labels to binary values with the 'default' strategy."""
     data_interface = DataInterface()
-    data_interface.data.labels = pd.Series([0, 1, 2, 0])
+    data_interface.data.labels = pd.Series([3, 0, 1, 2, 0])
 
     data_interface.convert2binary()
 
     assert set(data_interface.data.labels.unique()) == {0, 1}
-    tm.assert_series_equal(data_interface.data.labels, pd.Series([1, 0, 0, 1]))
+    tm.assert_series_equal(data_interface.data.labels, pd.Series([0, 1, 0, 0, 1]))
 
 def test_convert2binary_most_common():
     """Test converting labels to binary values with the 'most common' strategy."""
