@@ -48,6 +48,11 @@ def figure_tsne(dataset, perplexity=30, random_state=42, figsize=(10, 8)):
     tsne = TSNE(n_components=2, perplexity=perplexity, random_state=random_state)
     tsne_results = tsne.fit_transform(dataset.data)
     fig, ax = plt.subplots(figsize=figsize)
-    sns.scatterplot(x=tsne_results[:, 0], y=tsne_results[:, 1], hue=dataset.labels, palette='viridis', ax=ax)
+    sns.scatterplot(
+        x=tsne_results[:, 0],
+        y=tsne_results[:, 1],
+        hue=dataset.labels,
+        palette='viridis', ax=ax
+    )
     ax.set_title("t-SNE Visualization")
     return fig
