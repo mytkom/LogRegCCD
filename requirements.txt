@@ -7,4 +7,6 @@ tqdm
 jupyter
 pylint
 seaborn
+missingno
+tensorflow
 pytest
