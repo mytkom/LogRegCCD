@@ -9,3 +9,4 @@ pylint
 seaborn
 missingno
 tensorflow
+pytest
