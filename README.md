@@ -19,6 +19,7 @@ Implementation of logistic regression with cyclic coordinate descent based on [t
 ```plaintext
 ├── notebooks/                       # Jupyter notebooks for data preparation and training
 ├── src/                             # Main source files
+├── tests/                           # Tests files
 ├── requirements.txt                 # Python dependencies
 └── README.md                        # Project description and setup guide
 ```

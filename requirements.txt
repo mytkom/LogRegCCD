@@ -6,3 +6,5 @@ wandb
 tqdm
 jupyter
 pylint
+seaborn
+pytest
