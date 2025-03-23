@@ -20,7 +20,7 @@ class LogRegCCD:
         self,
         X_train: NDArray[np.float64],
         y_train: NDArray[np.int_],
-        eps=1e-5,
+        eps=1e-7,
         lam_max=10,
         lam_count=100,
         k_fold=10,
@@ -82,7 +82,8 @@ class LogRegCCD:
                     val_predictions = 1 / (
                         1 + np.exp(-(cw_X_valid @ new_beta[1:]) + new_beta[0])
                     )
-                    val_loss = np.mean((val_predictions - cw_y_valid) ** 2)  # MSE loss
+                    # Mean deviance
+                    val_loss = -2 * np.mean(cw_y_valid * np.log(val_predictions) + (1 - cw_y_valid) * np.log(1 - val_predictions))
 
                     self._log(
                         f"Lambda {lam}: Fold {fold+1} Validation Loss = {val_loss:.4f} Beta: {new_beta}"
