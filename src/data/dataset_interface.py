@@ -19,7 +19,8 @@ class DatasetInterface:
 class DataInterface:
     """Dataset interface"""
 
-    def __init__(self, data_loader=None):
+    def __init__(self, data_loader=None, dataset_name=None):
+        self.dataset_name = dataset_name
         self.data = DatasetInterface()
         if data_loader:
             self.data.data, self.data.labels = data_loader.load_data()
@@ -27,14 +28,15 @@ class DataInterface:
         self.val_data = DatasetInterface()
         self.test_data = DatasetInterface()
 
-    def preprocess_data(self, missing_values_strategy='mean', ratio=0.5, encode_labels=False):
+    def preprocess_data(self, missing_values_strategy='mean', ratio=0.5):
         """
         Preprocess the dataset.
         """
-        self.handle_missing_values(strategy=missing_values_strategy)
-        if encode_labels:
-            self.encode_labels()
+        self.encode_categorical_features()
+        self.encode_labels()
         self.convert2binary()
+        self.handle_missing_values(strategy=missing_values_strategy)
+        self.remove_constant_features()
         self.remove_correlated_features()
 
         num_observations = len(self.data.data)
@@ -42,13 +44,23 @@ class DataInterface:
         required_features = int(ratio * num_observations)
         if num_features < required_features:
             num_dummy_features = required_features - num_features
-            print(
-                f"Adding {num_dummy_features} dummy features"
-            )
             self.add_dummy_features(num_dummy_features=num_dummy_features)
+            print(
+                f"Added {num_dummy_features} dummy features with strategy {missing_values_strategy}."
+            )
 
         self.standardize_data()
 
+        return self
+
+    def encode_categorical_features(self):
+        """
+        Encode categorical features in the dataset.
+        """
+        for column in self.data.data.columns:
+            if self.data.data[column].dtype == 'object' or self.data.data[column].dtype.name == 'category':
+                label_encoder = LabelEncoder()
+                self.data.data[column] = label_encoder.fit_transform(self.data.data[column])
         return self
 
     def handle_missing_values(self, strategy='drop', default_value=None, reset_index=True):
@@ -88,13 +100,22 @@ class DataInterface:
         corr_matrix = self.data.data.corr().abs()
         upper_tri = corr_matrix.where(
             np.triu(np.ones(corr_matrix.shape), k=1
-        ).astype(bool))
+                    ).astype(bool))
         to_drop = [
             column for column in upper_tri.columns
             if any(upper_tri[column] > threshold)
         ]
         self.data.data = self.data.data.drop(columns=to_drop)
         print(f"Removed {len(to_drop)} correlated features.")
+        return self
+
+    def remove_constant_features(self):
+        """
+        Remove constant features from the dataset.
+        """
+        constant_features = [col for col in self.data.data.columns if self.data.data[col].nunique() == 1]
+        self.data.data = self.data.data.drop(columns=constant_features)
+        print(f"Removed {len(constant_features)} constant features.")
         return self
 
     def add_dummy_features(self, num_dummy_features=10):
@@ -152,6 +173,8 @@ class DataInterface:
 
             else:
                 raise ValueError(f"Unknown strategy: {strategy}")
+        else:
+            self.data.labels = (self.data.labels != np.unique(self.data.labels)[0]).astype(int)
 
         return self
 
@@ -163,21 +186,20 @@ class DataInterface:
         self.data.labels = pd.Series(label_encoder.fit_transform(self.data.labels))
         return self
 
-
     def split_data(self, test_size=0.2, val_size=0.1, random_state=42):
         """
         Split data into train, test, and validation sets.
         """
         self.train_data.data, self.test_data.data, \
-        self.train_data.labels, self.test_data.labels = train_test_split(
+            self.train_data.labels, self.test_data.labels = train_test_split(
             self.data.data, self.data.labels, test_size=test_size, random_state=random_state
         )
 
         if val_size > 0:
             self.train_data.data, self.val_data.data, \
-            self.train_data.labels, self.val_data.labels = train_test_split(
+                self.train_data.labels, self.val_data.labels = train_test_split(
                 self.train_data.data, self.train_data.labels, test_size=val_size, \
-                    random_state=random_state
+                random_state=random_state
             )
 
         return self
