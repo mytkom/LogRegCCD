@@ -6,6 +6,7 @@ from sklearn.datasets import fetch_openml
 import numpy as np
 import pandas as pd
 
+
 class DataLoader(ABC):
     """Abstract class for loading data."""
 
