@@ -19,7 +19,7 @@ class Precision(ClassMeasure):
         return precision_score(y_true, y_pred)
 
 class Recall(ClassMeasure):
-    def __call__(self, y_true, y_pred):
+    def __call__(self, y_true, y_pred):# -> Float | ndarray[Any, Any]:
         return recall_score(y_true, y_pred)
 
 class FMeasure(ClassMeasure):
