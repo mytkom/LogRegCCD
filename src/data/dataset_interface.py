@@ -46,7 +46,8 @@ class DataInterface:
             num_dummy_features = required_features - num_features
             self.add_dummy_features(num_dummy_features=num_dummy_features)
             print(
-                f"Added {num_dummy_features} dummy features with strategy {missing_values_strategy}."
+                f"Added {num_dummy_features} dummy features"
+                f"with strategy {missing_values_strategy}."
             )
 
         self.standardize_data()
@@ -58,7 +59,8 @@ class DataInterface:
         Encode categorical features in the dataset.
         """
         for column in self.data.data.columns:
-            if self.data.data[column].dtype == 'object' or self.data.data[column].dtype.name == 'category':
+            if (self.data.data[column].dtype == 'object'
+                    or self.data.data[column].dtype.name == 'category'):
                 label_encoder = LabelEncoder()
                 self.data.data[column] = label_encoder.fit_transform(self.data.data[column])
         return self
@@ -113,7 +115,8 @@ class DataInterface:
         """
         Remove constant features from the dataset.
         """
-        constant_features = [col for col in self.data.data.columns if self.data.data[col].nunique() == 1]
+        constant_features = [col for col in self.data.data.columns
+                             if self.data.data[col].nunique() == 1]
         self.data.data = self.data.data.drop(columns=constant_features)
         print(f"Removed {len(constant_features)} constant features.")
         return self

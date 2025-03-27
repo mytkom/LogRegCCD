@@ -168,7 +168,7 @@ def feature_variance_explained(dataset, n_components=None):
 
     return feature_importance.sort_values(by="Variance Explained", ascending=False)
 
-
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def train_logistic_regression(
         dataset, regularization_type=None, c=1.0, solver='liblinear', max_iter=500, verbosity=2
 ):
