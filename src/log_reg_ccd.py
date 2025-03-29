@@ -1,4 +1,5 @@
 """This module contains implementation of regularized logistic regression using CCD."""
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments, invalid-name, too-many-locals
 
 import numpy as np
@@ -42,7 +43,7 @@ class LogRegCCD:
         Fits the logistic regression model using CCD. Log-scale space from eps * lam_max to lam_max.
 
         Parameters:
-            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples 
+            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples
                                            and p is the number of features.
             y_train (NDArray[np.int_]): Binary class labels (0 or 1), shape (n,).
             eps (float): Smallest lambda value as a fraction of lam_max.
@@ -52,8 +53,8 @@ class LogRegCCD:
         """
         if X_train.shape[0] != y_train.shape[0]:
             raise RuntimeError(
-                f"LogRegCCD fit: X_train ({X_train.shape[0]}) " +
-                f"and y_train({y_train.shape[0]}) shapes do not match."
+                f"LogRegCCD fit: X_train ({X_train.shape[0]}) "
+                + f"and y_train({y_train.shape[0]}) shapes do not match."
             )
 
         in_features = X_train.shape[1]
@@ -280,7 +281,9 @@ class LogRegCCD:
             new_beta = beta.copy()
 
             # Compute denominators for all beta coefficients
-            denom = np.einsum("ij,i,ij->j", X_ext, weights, X_ext) + 1e-12  # Avoid division by zero
+            denom = (
+                np.einsum("ij,i,ij->j", X_ext, weights, X_ext) + 1e-12
+            )  # Avoid division by zero
 
             # Compute soft-thresholding step efficiently
             num = X_ext.T @ y_minus_posteriors
@@ -290,7 +293,9 @@ class LogRegCCD:
             new_beta = num / denom
 
             # Compute loss using the quadratic approximation
-            l = self._quadratic_approx_loss(X_ext, beta, new_beta, weights, y_minus_posteriors, lam)
+            l = self._quadratic_approx_loss(
+                X_ext, beta, new_beta, weights, y_minus_posteriors, lam
+            )
 
             # Check for convergence
             if abs(l - l_old) < eps:
@@ -388,16 +393,22 @@ class LogRegCCD:
         best_value = values[max_idx]
 
         plt.figure(figsize=(8, 6))
-        plt.plot(self.lambdas, values, marker="o", linestyle="-", color="b", label="Measure")
+        plt.plot(
+            self.lambdas, values, marker="o", linestyle="-", color="b", label="Measure"
+        )
 
         plt.scatter(best_lambda, best_value, color="red", zorder=3, label="Max Measure")
         plt.annotate(
             f"λ={best_lambda:.2e}\nValue={best_value:.4f}",
             xy=(best_lambda, best_value),
             xytext=(1.2 * best_lambda, best_value),
-            arrowprops={"arrowstyle": '->', "color": 'red'},
+            arrowprops={"arrowstyle": "->", "color": "red"},
             fontsize=10,
-            bbox={"boxstyle": 'round,pad=0.3', "edgecolor": 'red', "facecolor": 'white'},
+            bbox={
+                "boxstyle": "round,pad=0.3",
+                "edgecolor": "red",
+                "facecolor": "white",
+            },
         )
 
         plt.xscale("log")
