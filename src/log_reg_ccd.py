@@ -265,7 +265,7 @@ class LogRegCCD:
         Returns:
             NDArray[np.float64]: Optimized beta coefficients.
         """
-        n, d = X.shape
+        n, _ = X.shape
         X_ext = np.hstack((np.ones((n, 1)), X))  # Add intercept term
         atol = 1e-5
         l_old = float("inf")
