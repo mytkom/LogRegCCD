@@ -1,3 +1,6 @@
+"""This module contains implementation of regularized logistic regression using CCD."""
+# pylint: disable=too-many-arguments, too-many-positional-arguments, invalid-name, too-many-locals
+
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.typing import NDArray
@@ -9,8 +12,8 @@ EPS = 1e-8
 
 class LogRegCCD:
     """
-    Implementation of regularized logistic regression for binary classification problem using
-    cyclic coordinate descent (CCD) method, based solely on https://www.jstatsoft.org/article/view/v033i01
+    Implementation of regularized logistic regression for binary classification problem using cyclic
+    coordinate descent (CCD) method, based solely on https://www.jstatsoft.org/article/view/v033i01
     """
 
     def __init__(self, verbose: bool = False) -> None:
@@ -39,7 +42,8 @@ class LogRegCCD:
         Fits the logistic regression model using CCD. Log-scale space from eps * lam_max to lam_max.
 
         Parameters:
-            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples and p is the number of features.
+            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples 
+                                           and p is the number of features.
             y_train (NDArray[np.int_]): Binary class labels (0 or 1), shape (n,).
             eps (float): Smallest lambda value as a fraction of lam_max.
             lam_max (float): Maximum lambda value for regularization.
@@ -48,7 +52,8 @@ class LogRegCCD:
         """
         if X_train.shape[0] != y_train.shape[0]:
             raise RuntimeError(
-                f"LogRegCCD fit: X_train ({X_train.shape[0]}) and y_train({y_train.shape[0]}) shapes do not match."
+                f"LogRegCCD fit: X_train ({X_train.shape[0]}) " +
+                f"and y_train({y_train.shape[0]}) shapes do not match."
             )
 
         in_features = X_train.shape[1]
@@ -99,8 +104,8 @@ class LogRegCCD:
     ) -> tuple:
         """
         Validates all betas calculated using cyclical coordinate descent for logistic regression
-        for the specified measure class. It chooses and returns the best beta and the corresponding lambda
-        based on the maximum validation measure value.
+        for the specified measure class. It chooses and returns the best beta and the corresponding
+        lambda based on the maximum validation measure value.
 
         Parameters:
             X_valid (NDArray[np.float64]): Validation feature matrix (n x p).
@@ -128,14 +133,14 @@ class LogRegCCD:
                 max_measure_idx = idx
                 max_measure_lam = lam
 
-        best_beta = self.betas[max_measure_idx]
+        self.best_beta = self.betas[max_measure_idx]
 
         self._log(
             f"Max measure value: {max_measure_value:.4f} for lambda: {max_measure_lam}, "
-            f"beta values: {best_beta}"
+            f"beta values: {self.best_beta}"
         )
 
-        return max_measure_lam, best_beta
+        return max_measure_lam, self.best_beta
 
     def predict_proba(
         self, X: NDArray[np.float64], beta_idx: int | None = None
@@ -151,7 +156,7 @@ class LogRegCCD:
             NDArray[np.float64]: Probability predictions.
         """
         beta = self.best_beta if beta_idx is None else self.betas[beta_idx]
-        return self._sigmoid((-X @ beta[1:]) + beta[0])
+        return self._sigmoid((X @ beta[1:]) + beta[0])
 
     def predict(
         self, X: NDArray[np.float64], beta_idx: int | None = None
@@ -183,7 +188,7 @@ class LogRegCCD:
             in_features (int): Number of features in the model.
 
         Returns:
-            tuple: avg_loss (dict) and lambda_betas (dict) containing losses and betas for each lambda.
+            tuple of dicts: avg_loss and lambda_betas containing losses and betas for each lambda.
         """
         lambda_losses = {lam: [] for lam in lambdas}
         lambda_betas = {lam: [] for lam in lambdas}
@@ -232,7 +237,7 @@ class LogRegCCD:
             float: Validation loss.
         """
         val_predictions = np.clip(
-            self._sigmoid(-(X_valid @ beta[1:] + beta[0])), 1e-5, 1 - 1e-5
+            self._sigmoid((X_valid @ beta[1:] + beta[0])), 1e-5, 1 - 1e-5
         )
         return np.mean(
             -2 * y_valid * np.log(val_predictions)
@@ -265,7 +270,7 @@ class LogRegCCD:
         l_old, l = float("inf"), 0  # Initialize loss values
 
         for i in range(max_iter):
-            posteriors = np.clip(self._sigmoid(-(X @ beta)), atol, 1.0 - atol)
+            posteriors = np.clip(self._sigmoid((X @ beta)), atol, 1.0 - atol)
             weights = posteriors * (1 - posteriors)
             y_minus_posteriors = y - posteriors
             new_beta = beta.copy()
@@ -274,18 +279,17 @@ class LogRegCCD:
             for j in range(beta.shape[0]):
                 denom = np.sum(weights * np.square(X[:, j]))
                 result = (X[:, j] @ y_minus_posteriors) + (beta[j] * denom)
-                sos = np.sum(np.square(X[:, j]))
 
                 # Apply soft-thresholding for L1 regularization (except for intercept)
                 new_beta[j] = (
-                    result / (denom + sos)
+                    result / denom
                     if j == 0
-                    else self._soft_thresh(result, n * lam) / (denom + sos)
+                    else self._soft_thresh(result, n * lam) / denom
                 )
 
             # Compute loss using the quadratic approximation
             l = self._quadratic_approx_loss(
-                X, y, beta, new_beta, weights, y_minus_posteriors, lam
+                X, beta, new_beta, weights, y_minus_posteriors, lam
             )
 
             # Check for convergence
@@ -307,7 +311,7 @@ class LogRegCCD:
         return (-log_likelihood / n) + lam * np.linalg.norm(beta[1:], ord=1)
 
     def _quadratic_approx_loss(
-        self, X, y, beta, new_beta, weights, y_minus_posteriors, lam
+        self, X, beta, new_beta, weights, y_minus_posteriors, lam
     ) -> float:
         """Computes the quadratic approximation of the logistic regression loss."""
         n = X.shape[0]
@@ -353,6 +357,54 @@ class LogRegCCD:
         plt.xlabel("lambda")
         plt.ylabel("Beta coefficients")
         plt.title("Lasso Regularization Path")
+        plt.grid(True)
+        plt.show()
+
+    def plot(
+        self,
+        X_valid: NDArray[np.float64],
+        y_valid: NDArray[np.int_],
+        measure: ProbMeasure | ClassMeasure,
+    ):
+        """
+        Plots how the given evaluation measure changes with lambda.
+        The maximum measure value and corresponding lambda are highlighted.
+
+        Parameters:
+            X_valid (NDArray[np.float64]): Validation feature matrix.
+            y_valid (NDArray[np.int_]): Validation target vector.
+            measure (ProbMeasure | ClassMeasure): Evaluation measure.
+        """
+        method = (
+            self.predict if isinstance(measure, ClassMeasure) else self.predict_proba
+        )
+
+        values = []
+        for idx, _ in enumerate(self.lambdas):
+            values.append(measure(y_valid, method(X_valid, beta_idx=idx)))
+
+        max_idx = np.argmax(values)
+        best_lambda = self.lambdas[max_idx]
+        best_value = values[max_idx]
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(self.lambdas, values, marker="o", linestyle="-", color="b", label="Measure")
+
+        plt.scatter(best_lambda, best_value, color="red", zorder=3, label="Max Measure")
+        plt.annotate(
+            f"λ={best_lambda:.2e}\nValue={best_value:.4f}",
+            xy=(best_lambda, best_value),
+            xytext=(1.2 * best_lambda, best_value),
+            arrowprops={"arrowstyle": '->', "color": 'red'},
+            fontsize=10,
+            bbox={"boxstyle": 'round,pad=0.3', "edgecolor": 'red', "facecolor": 'white'},
+        )
+
+        plt.xscale("log")
+        plt.xlabel("Lambda")
+        plt.ylabel(measure)
+        plt.title(f"{measure} vs. Lambda")
+        plt.legend()
         plt.grid(True)
         plt.show()
 
