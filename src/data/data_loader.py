@@ -32,7 +32,7 @@ class OpenMLDataLoader(DataLoader):
 class SyntheticDataLoader(DataLoader):
     """Synthetic data creator."""
 
-    def __init__(self, p, n, d, g, random_seed=42):
+    def __init__(self, p, n, d, g, random_seed=42): # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
         Parameters:
         - p: Class prior probability for Y=1.
