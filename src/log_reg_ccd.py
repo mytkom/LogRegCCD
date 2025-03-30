@@ -1,4 +1,5 @@
 """This module contains implementation of regularized logistic regression using CCD."""
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments, invalid-name, too-many-locals
 
 import numpy as np
@@ -42,7 +43,7 @@ class LogRegCCD:
         Fits the logistic regression model using CCD. Log-scale space from eps * lam_max to lam_max.
 
         Parameters:
-            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples 
+            X_train (NDArray[np.float64]): Feature matrix (n x p) where n is the number of samples
                                            and p is the number of features.
             y_train (NDArray[np.int_]): Binary class labels (0 or 1), shape (n,).
             eps (float): Smallest lambda value as a fraction of lam_max.
@@ -52,8 +53,8 @@ class LogRegCCD:
         """
         if X_train.shape[0] != y_train.shape[0]:
             raise RuntimeError(
-                f"LogRegCCD fit: X_train ({X_train.shape[0]}) " +
-                f"and y_train({y_train.shape[0]}) shapes do not match."
+                f"LogRegCCD fit: X_train ({X_train.shape[0]}) "
+                + f"and y_train({y_train.shape[0]}) shapes do not match."
             )
 
         in_features = X_train.shape[1]
@@ -245,7 +246,7 @@ class LogRegCCD:
         )
 
     def _coordinate_descent(
-        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=1000, eps=1e-10
+        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=10000, eps=1e-10
     ) -> NDArray[np.float64]:
         """
         Performs cyclical coordinate descent to optimize beta coefficients for logistic regression.
@@ -264,32 +265,36 @@ class LogRegCCD:
         Returns:
             NDArray[np.float64]: Optimized beta coefficients.
         """
-        n = X.shape[0]
-        X = np.hstack((np.ones((n, 1)), X))  # Add intercept term
+        n, _ = X.shape
+        X_ext = np.hstack((np.ones((n, 1)), X))  # Add intercept term
         atol = 1e-5
-        l_old, l = float("inf"), 0  # Initialize loss values
+        l_old = float("inf")
+        weights = np.repeat(0.25, n)
 
         for i in range(max_iter):
-            posteriors = np.clip(self._sigmoid((X @ beta)), atol, 1.0 - atol)
-            weights = posteriors * (1 - posteriors)
+            posteriors = np.clip(self._sigmoid(X_ext @ beta), atol, 1.0 - atol)
+
+            # alternatively instead of 0.25 for every weight
+            # weights = posteriors * (1 - posteriors)
+
             y_minus_posteriors = y - posteriors
             new_beta = beta.copy()
 
-            # Update each beta coefficient
-            for j in range(beta.shape[0]):
-                denom = np.sum(weights * np.square(X[:, j]))
-                result = (X[:, j] @ y_minus_posteriors) + (beta[j] * denom)
+            # Compute denominators for all beta coefficients
+            denom = (
+                np.einsum("ij,i,ij->j", X_ext, weights, X_ext) + 1e-12
+            )  # Avoid division by zero
 
-                # Apply soft-thresholding for L1 regularization (except for intercept)
-                new_beta[j] = (
-                    result / denom
-                    if j == 0
-                    else self._soft_thresh(result, n * lam) / denom
-                )
+            # Compute soft-thresholding step efficiently
+            num = X_ext.T @ y_minus_posteriors
+            num += beta * denom
+            num[1:] = self._soft_thresh(num[1:], n * lam)  # Exclude intercept
+
+            new_beta = num / denom
 
             # Compute loss using the quadratic approximation
             l = self._quadratic_approx_loss(
-                X, beta, new_beta, weights, y_minus_posteriors, lam
+                X_ext, beta, new_beta, weights, y_minus_posteriors, lam
             )
 
             # Check for convergence
@@ -388,16 +393,22 @@ class LogRegCCD:
         best_value = values[max_idx]
 
         plt.figure(figsize=(8, 6))
-        plt.plot(self.lambdas, values, marker="o", linestyle="-", color="b", label="Measure")
+        plt.plot(
+            self.lambdas, values, marker="o", linestyle="-", color="b", label="Measure"
+        )
 
         plt.scatter(best_lambda, best_value, color="red", zorder=3, label="Max Measure")
         plt.annotate(
             f"λ={best_lambda:.2e}\nValue={best_value:.4f}",
             xy=(best_lambda, best_value),
             xytext=(1.2 * best_lambda, best_value),
-            arrowprops={"arrowstyle": '->', "color": 'red'},
+            arrowprops={"arrowstyle": "->", "color": "red"},
             fontsize=10,
-            bbox={"boxstyle": 'round,pad=0.3', "edgecolor": 'red', "facecolor": 'white'},
+            bbox={
+                "boxstyle": "round,pad=0.3",
+                "edgecolor": "red",
+                "facecolor": "white",
+            },
         )
 
         plt.xscale("log")
