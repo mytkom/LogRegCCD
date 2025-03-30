@@ -32,23 +32,26 @@ class OpenMLDataLoader(DataLoader):
 class SyntheticDataLoader(DataLoader):
     """Synthetic data creator."""
 
-    def __init__(self, p, n, d, g):
+    def __init__(self, p, n, d, g, random_seed=42):
         """
         Parameters:
         - p: Class prior probability for Y=1.
         - n: Number of observations.
         - d: Number of features.
         - g: Covariance parameter for the multivariate normal distribution.
+        - random_seed: Random seed.
         """
         self.p = p
         self.n = n
         self.d = d
         self.g = g
+        self.random_seed = random_seed
 
     # pylint: disable=fixme
     # TODO check - nie jestem pewna czy to jest dobrze, dodałam jako przykład factory
     def load_data(self):
         """Generate synthetic data."""
+        np.random.seed(self.random_seed)
 
         labels = np.random.binomial(1, self.p, self.n)
 

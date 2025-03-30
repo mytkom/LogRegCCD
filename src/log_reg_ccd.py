@@ -406,7 +406,8 @@ class LogRegCCD:
         plt.title(f"{measure} vs. Lambda")
         plt.legend()
         plt.grid(True)
-        plt.show()
+        fig = plt.gcf()
+        return fig
 
     def _log(self, message) -> None:
         """

@@ -1,0 +1,30 @@
+==================================================
+MODEL EVALUATION RESULTS
+==================================================
+
+COEFFICIENTS:
+[0.01935719 0.67026287 0.06444495 0.         0.049455   0.
+ 0.         0.         0.         0.         0.        ]
+
+AUC-ROC SCORE: 0.7606
+
+BALANCED ACCURACY: 0.6810
+
+ACCURACY: 0.6800
+
+CLASSIFICATION REPORT:
+              precision    recall  f1-score   support
+
+           0       0.71      0.65      0.68       155
+           1       0.66      0.71      0.68       145
+
+    accuracy                           0.68       300
+   macro avg       0.68      0.68      0.68       300
+weighted avg       0.68      0.68      0.68       300
+
+
+CONFUSION MATRIX:
+101 54
+42 103
+
+==================================================
