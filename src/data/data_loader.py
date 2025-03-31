@@ -48,7 +48,8 @@ class SyntheticDataLoader(DataLoader):
         self.random_seed = random_seed
 
     def load_data(self):
-        """Generate synthetic data efficiently."""
+        """Generate synthetic data."""
+
         np.random.seed(self.random_seed)
         labels = np.random.binomial(1, self.p, size=self.n)
         indices = np.arange(self.d)
