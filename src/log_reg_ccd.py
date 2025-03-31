@@ -370,6 +370,7 @@ class LogRegCCD:
         X_valid: NDArray[np.float64],
         y_valid: NDArray[np.int_],
         measure: ProbMeasure | ClassMeasure,
+        file_path: str | None = None,
     ):
         """
         Plots how the given evaluation measure changes with lambda.
@@ -379,6 +380,7 @@ class LogRegCCD:
             X_valid (NDArray[np.float64]): Validation feature matrix.
             y_valid (NDArray[np.int_]): Validation target vector.
             measure (ProbMeasure | ClassMeasure): Evaluation measure.
+            file_path (str | None): Path to save the plot.
         """
         method = (
             self.predict if isinstance(measure, ClassMeasure) else self.predict_proba
@@ -417,6 +419,10 @@ class LogRegCCD:
         plt.title(f"{measure} vs. Lambda")
         plt.legend()
         plt.grid(True)
+
+        if file_path:
+            plt.savefig(file_path)
+
         plt.show()
 
     def _log(self, message) -> None:

@@ -1,8 +1,9 @@
+"""Utility functions"""
 from matplotlib import pyplot as plt
 
 from src.measures import AUCROC, AUCPR, FMeasure, BalancedAccuracy
 
-
+# pylint: disable=invalid-name
 def evaluate_model(model, X, y, model_name):
     """Evaluate models using measure classes"""
     roc_auc = AUCROC()
@@ -23,6 +24,7 @@ def evaluate_model(model, X, y, model_name):
         'F1 Score': f1(y, y_pred),
         'Balanced Accuracy': bal_acc(y, y_pred)
     }
+
 
 def plot_lasso_path(lambdas, betas):
     """Plot the Lasso regularization"""

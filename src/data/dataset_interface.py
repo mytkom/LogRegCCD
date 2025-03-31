@@ -65,8 +65,10 @@ class DataInterface:
         """
         n = len(self.data.data)
         if num_samples < n:
-            self.data.data = self.data.data.sample(n=num_samples, random_state=42).reset_index(drop=True)
-            self.data.labels = self.data.labels.sample(n=num_samples, random_state=42).reset_index(drop=True)
+            self.data.data = (
+                self.data.data.sample(n=num_samples, random_state=42).reset_index(drop=True))
+            self.data.labels = (
+                self.data.labels.sample(n=num_samples, random_state=42).reset_index(drop=True))
             print(f"Reduced dataset from {n} to {num_samples} samples.")
         return self
 
