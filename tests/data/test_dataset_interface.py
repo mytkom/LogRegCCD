@@ -165,17 +165,19 @@ def test_standardize_data():
     """Test standardizing the dataset."""
     data_interface = DataInterface()
     data_interface.data.data = pd.DataFrame({
-        'feature1': [1, 2, 3, 4],
-        'feature2': [5, 6, 7, 8]
+        'feature1': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        'feature2': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     })
+    data_interface.data.labels = pd.Series([0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
+    data_interface.split_data(test_size=0.2, val_size=0.2)
 
     data_interface.standardize_data()
 
-    print(f'Mean of each column:\n{data_interface.data.data.mean()}')
-    print(f'Standard deviation of each column:\n{data_interface.data.data.std()}')
+    print(f'Mean of each column:\n{data_interface.train_data.data.mean()}')
+    print(f'Standard deviation of each column:\n{data_interface.train_data.data.std()}')
 
-    assert np.allclose(data_interface.data.data.mean(), 0, atol=1e-7)
-    assert np.allclose(data_interface.data.data.std(ddof=0), 1, atol=1e-7)
+    assert np.allclose(data_interface.train_data.data.mean(), 0, atol=1e-7)
+    assert np.allclose(data_interface.train_data.data.std(ddof=0), 1, atol=1e-7)
 
 def test_split_data():
     """Test splitting data into train, test, and validation sets."""

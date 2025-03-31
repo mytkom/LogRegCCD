@@ -55,8 +55,6 @@ class DataInterface:
                 f"Added {num_dummy_features} dummy features."
             )
 
-        self.standardize_data()
-
         return self
 
     def reduce_samples(self, num_samples=1000):
@@ -158,10 +156,16 @@ class DataInterface:
         """
         Standardize the dataset (mean=0, variance=1).
         """
-        scaler = StandardScaler()
-        self.data.data = pd.DataFrame(
-            scaler.fit_transform(self.data.data), columns=self.data.data.columns
-        )
+
+        if self.train_data is not None:
+            scaler = StandardScaler()
+            scaler.fit(self.train_data.data)
+            self.train_data.data = scaler.transform(self.train_data.data)
+            if self.val_data.data is not None:
+                self.val_data.data = scaler.transform(self.val_data.data)
+            if self.test_data.data is not None:
+                self.test_data.data = scaler.transform(self.test_data.data)
+
         return self
 
     def convert2binary(self, strategy='default', in_labels=None, reset_index=True):
