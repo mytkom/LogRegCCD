@@ -39,6 +39,7 @@ class LogRegCCD:
         lam_max: float = 10.0,
         lam_count: int = 100,
         k_fold: int = 10,
+        max_iter: int = 10000
     ) -> None:
         """
         Fits the logistic regression model using CCD. Log-scale space from eps * lam_max to lam_max.
@@ -66,7 +67,7 @@ class LogRegCCD:
             self.lambdas = np.array([lam_max])
             self.betas = np.empty((1, in_features + 1))
             self.betas[0], _, _ = self._coordinate_descent(
-                X_train, y_train, lam_max, np.zeros(in_features + 1)
+                X_train, y_train, lam_max, np.zeros(in_features + 1), max_iter=max_iter
             )
             self.best_lambda = lam_max
             self.best_beta = self.betas[0]
@@ -80,7 +81,7 @@ class LogRegCCD:
 
             # Perform k-fold cross-validation
             avg_loss, _ = self._k_fold_cross_validation(
-                X_train, y_train, k_fold, self.lambdas, in_features
+                X_train, y_train, k_fold, self.lambdas, in_features, max_iter=max_iter
             )
 
             # Find the best lambda
@@ -95,7 +96,7 @@ class LogRegCCD:
             current_beta = np.zeros(in_features + 1)
             for idx, lam in enumerate(self.lambdas):
                 self.betas[idx], _, _ = self._coordinate_descent(
-                    X_train, y_train, lam, current_beta
+                    X_train, y_train, lam, current_beta, max_iter=max_iter
                 )
                 if lam == self.best_lambda:
                     self.best_beta = self.betas[idx]
@@ -179,7 +180,7 @@ class LogRegCCD:
         return ((beta[0] + (X @ beta[1:])) > 0.0).astype(np.int_)
 
     def _k_fold_cross_validation(
-        self, X_train, y_train, k_fold, lambdas, in_features
+        self, X_train, y_train, k_fold, lambdas, in_features, max_iter
     ) -> tuple:
         """
         Performs k-fold cross-validation to evaluate loss for different lambda values.
@@ -208,7 +209,7 @@ class LogRegCCD:
 
             for lam in lambdas:
                 new_beta, _, _ = self._coordinate_descent(
-                    cw_X_train, cw_y_train, lam, current_beta
+                    cw_X_train, cw_y_train, lam, current_beta, max_iter=max_iter
                 )
                 val_loss = self._evaluate_validation_loss(
                     cw_X_valid, cw_y_valid, new_beta
@@ -362,7 +363,7 @@ class LogRegCCD:
     def _soft_thresh(self, z, gamma):
         return np.sign(z) * np.maximum(np.abs(z) - gamma, 0)
 
-    def plot_iter_values(self, X, y, path: None | str = None, figsize=(10, 5)):
+    def plot_iter_values(self, X, y, path: None | str = None, figsize=(10, 5), max_iter=100):
         """
         Plots the loss function and beta coefficients over iterations during coordinate descent.
 
@@ -376,7 +377,7 @@ class LogRegCCD:
         """
         beta_init = np.zeros(X.shape[1] + 1, dtype=np.float64)  # Include intercept term
         _, loss_values, beta_values = self._coordinate_descent(
-            X, y, self.best_lambda, beta_init, max_iter=100
+            X, y, self.best_lambda, beta_init, max_iter=max_iter
         )
 
         # Convert beta_values list to an array for easy plotting
