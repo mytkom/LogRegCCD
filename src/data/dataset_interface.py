@@ -161,10 +161,17 @@ class DataInterface:
             scaler = StandardScaler()
             scaler.fit(self.train_data.data)
             self.train_data.data = scaler.transform(self.train_data.data)
+            self.data.data = pd.DataFrame(
+                scaler.transform(self.data.data), columns=self.data.data.columns
+            )
             if self.val_data.data is not None:
-                self.val_data.data = scaler.transform(self.val_data.data)
+                self.val_data.data = pd.DataFrame(
+                    scaler.transform(self.val_data.data), columns=self.val_data.data.columns
+                )
             if self.test_data.data is not None:
-                self.test_data.data = scaler.transform(self.test_data.data)
+                self.test_data.data = pd.DataFrame(
+                    scaler.transform(self.test_data.data), columns=self.test_data.data.columns
+                )
 
         return self
 
