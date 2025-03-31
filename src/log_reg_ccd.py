@@ -86,7 +86,8 @@ class LogRegCCD:
             # Find the best lambda
             self.best_lambda = min(avg_loss, key=avg_loss.get)
             self._log(
-                f"Avg Mean Deviance of best lambda ({self.best_lambda}): {avg_loss[self.best_lambda]}"
+                f"Avg Mean Deviance of best lambda ({self.best_lambda}): "
+                f"{avg_loss[self.best_lambda]}"
             )
 
             # Perform CCD on whole training dataset and save betas
@@ -368,12 +369,13 @@ class LogRegCCD:
         Args:
             X (numpy.ndarray): The input feature matrix of shape (n_samples, n_features).
             y (numpy.ndarray): The target variable vector of shape (n_samples,).
-            path (str | None, optional): The file path to save the plot. If None, the plot is not saved. Defaults to None.
+            path (str | None, optional): The file path to save the plot.
+                If None, the plot is not saved. Defaults to None.
             figsize (tuple, optional): The size of the plot. Defaults to (10, 5).
 
         """
         beta_init = np.zeros(X.shape[1] + 1, dtype=np.float64)  # Include intercept term
-        beta_opt, loss_values, beta_values = self._coordinate_descent(
+        _, loss_values, beta_values = self._coordinate_descent(
             X, y, self.best_lambda, beta_init, max_iter=100
         )
 
@@ -410,7 +412,8 @@ class LogRegCCD:
 
     def plot_lasso_path(self, path: None | str = None, figsize=(8, 6)):
         """
-        Plots and saves to file (if path specified) the Lasso path with log(lambda) on the x-axis and beta values on the y-axis.
+        Plots and saves to file (if path specified) the Lasso path with log(lambda)
+        on the x-axis and beta values on the y-axis.
         """
         plt.figure(figsize=figsize)
         for i in range(1, self.betas.shape[1]):
