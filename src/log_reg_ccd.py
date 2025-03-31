@@ -350,11 +350,11 @@ class LogRegCCD:
     def _soft_thresh(self, z, gamma):
         return np.sign(z) * np.maximum(np.abs(z) - gamma, 0)
 
-    def plot_lasso_path(self):
+    def plot_lasso_path(self, path: None | str = None, figsize=(8,6)):
         """
-        Plots the Lasso path with -log(lambda) on the x-axis and beta values on the y-axis.
+        Plots and saves to file (if path specified) the Lasso path with log(lambda) on the x-axis and beta values on the y-axis.
         """
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=figsize)
         for i in range(1, self.betas.shape[1]):
             plt.plot(self.lambdas, self.betas[:, i], label=f"{i+1}")
 
@@ -363,7 +363,10 @@ class LogRegCCD:
         plt.ylabel("Beta coefficients")
         plt.title("Lasso Regularization Path")
         plt.grid(True)
+        if path is not None:
+            plt.savefig(path)
         plt.show()
+
 
     def plot(
         self,
