@@ -246,7 +246,7 @@ class LogRegCCD:
         )
 
     def _coordinate_descent(
-        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=10000, eps=1e-10
+        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=1000, eps=1e-10
     ) -> NDArray[np.float64]:
         """
         Performs cyclical coordinate descent to optimize beta coefficients for logistic regression.

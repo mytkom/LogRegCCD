@@ -28,6 +28,12 @@ class DataInterface:
         self.val_data = DatasetInterface()
         self.test_data = DatasetInterface()
 
+    def get_feature_names(self):
+        """
+        Return the feature names of the dataset.
+        """
+        return self.data.data.columns.tolist()
+
     def preprocess_data(self, missing_values_strategy='mean', ratio=0.5):
         """
         Preprocess the dataset.
@@ -46,12 +52,22 @@ class DataInterface:
             num_dummy_features = required_features - num_features
             self.add_dummy_features(num_dummy_features=num_dummy_features)
             print(
-                f"Added {num_dummy_features} dummy features"
-                f"with strategy {missing_values_strategy}."
+                f"Added {num_dummy_features} dummy features."
             )
 
         self.standardize_data()
 
+        return self
+
+    def reduce_samples(self, num_samples=1000):
+        """
+        Reduce the number of samples in the dataset based on specified threshold.
+        """
+        n = len(self.data.data)
+        if num_samples < n:
+            self.data.data = self.data.data.sample(n=num_samples, random_state=42).reset_index(drop=True)
+            self.data.labels = self.data.labels.sample(n=num_samples, random_state=42).reset_index(drop=True)
+            print(f"Reduced dataset from {n} to {num_samples} samples.")
         return self
 
     def encode_categorical_features(self):
@@ -95,7 +111,7 @@ class DataInterface:
             raise ValueError(f"Unknown strategy: {strategy}")
         return self
 
-    def remove_correlated_features(self, threshold=0.95):
+    def remove_correlated_features(self, threshold=0.90):
         """
         Remove correlated features based on a given threshold.
         """
