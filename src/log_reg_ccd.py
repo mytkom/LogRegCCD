@@ -98,7 +98,7 @@ class LogRegCCD:
                 )
                 if lam == self.best_lambda:
                     self.best_beta = self.betas[idx]
-                
+
     def validate(
         self,
         X_valid: NDArray[np.float64],
@@ -265,7 +265,10 @@ class LogRegCCD:
             eps: Convergence threshold for early stopping.
 
         Returns:
-            NDArray[np.float64]: Optimized beta coefficients.
+            tuple: A tuple containing:
+                - NDArray[np.float64]: Optimized beta coefficients.
+                - list[float]: Loss values at each iteration.
+                - list[NDArray[np.float64]]: Beta values at each iteration.
         """
         n, _ = X.shape
         X_ext = np.hstack((np.ones((n, 1)), X))  # Add intercept term
@@ -358,43 +361,54 @@ class LogRegCCD:
     def _soft_thresh(self, z, gamma):
         return np.sign(z) * np.maximum(np.abs(z) - gamma, 0)
 
-    def plot_iter_values(self, X, y, path: None | str = None, figsize=(10,5)):
+    def plot_iter_values(self, X, y, path: None | str = None, figsize=(10, 5)):
+        """
+        Plots the loss function and beta coefficients over iterations during coordinate descent.
+
+        Args:
+            X (numpy.ndarray): The input feature matrix of shape (n_samples, n_features).
+            y (numpy.ndarray): The target variable vector of shape (n_samples,).
+            path (str | None, optional): The file path to save the plot. If None, the plot is not saved. Defaults to None.
+            figsize (tuple, optional): The size of the plot. Defaults to (10, 5).
+
+        """
         beta_init = np.zeros(X.shape[1] + 1, dtype=np.float64)  # Include intercept term
-        beta_opt, loss_values, beta_values = self._coordinate_descent(X, y, self.best_lambda, beta_init, max_iter=100)
-        
+        beta_opt, loss_values, beta_values = self._coordinate_descent(
+            X, y, self.best_lambda, beta_init, max_iter=100
+        )
+
         # Convert beta_values list to an array for easy plotting
         beta_values = np.array(beta_values)
         iterations = range(len(loss_values))
-        
+
         # Plot loss function
         plt.figure(figsize=figsize)
         plt.subplot(1, 2, 1)
-        plt.plot(iterations, loss_values, label='Loss')
-        plt.xlabel('Iteration')
-        plt.ylabel('Loss')
-        plt.title('Loss function over iterations')
+        plt.plot(iterations, loss_values, label="Loss")
+        plt.xlabel("Iteration")
+        plt.ylabel("Loss")
+        plt.title("Loss function over iterations")
         plt.legend()
-        
+
         # Plot beta coefficients
         plt.subplot(1, 2, 2)
         for i in range(beta_values.shape[1]):
             if i == 0:
-                plt.plot(iterations, beta_values[:, i], label=f'Beta {i}', color="black")
+                plt.plot(
+                    iterations, beta_values[:, i], label=f"Beta {i}", color="black"
+                )
             else:
-                plt.plot(iterations, beta_values[:, i], label=f'Beta {i}')
-        plt.xlabel('Iteration')
-        plt.ylabel('Beta values')
-        plt.title('Beta coefficients over iterations')
+                plt.plot(iterations, beta_values[:, i], label=f"Beta {i}")
+        plt.xlabel("Iteration")
+        plt.ylabel("Beta values")
+        plt.title("Beta coefficients over iterations")
         plt.legend()
         if path is not None:
             plt.savefig(path)
-        
+
         plt.show()
-        return beta_opt
 
-
-
-    def plot_lasso_path(self, path: None | str = None, figsize=(8,6)):
+    def plot_lasso_path(self, path: None | str = None, figsize=(8, 6)):
         """
         Plots and saves to file (if path specified) the Lasso path with log(lambda) on the x-axis and beta values on the y-axis.
         """
@@ -411,7 +425,6 @@ class LogRegCCD:
         if path is not None:
             plt.savefig(path)
         plt.show()
-
 
     def plot(
         self,
