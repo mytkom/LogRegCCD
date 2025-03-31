@@ -425,7 +425,8 @@ class LogRegCCD:
         plt.ylabel("Beta coefficients")
         plt.title("Lasso Regularization Path")
         plt.grid(True)
-        plt.legend()
+        if self.betas.shape[1] < 10:
+            plt.legend()
         if path is not None:
             plt.savefig(path)
         plt.show()
