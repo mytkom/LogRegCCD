@@ -27,6 +27,7 @@ class LogRegCCD:
         self.is_fitted: bool = False
         self.lambdas: NDArray[np.float64] = np.empty(0)
         self.betas: NDArray[np.float64] = np.empty(0)
+        self.best_lambda: float = 0.0
         self.best_beta: NDArray[np.float64] = np.empty(0)
         self.verbose: bool = verbose
 
@@ -64,9 +65,10 @@ class LogRegCCD:
         if lam_count == 1:
             self.lambdas = np.array([lam_max])
             self.betas = np.empty((1, in_features + 1))
-            self.betas[0] = self._coordinate_descent(
+            self.betas[0], _, _ = self._coordinate_descent(
                 X_train, y_train, lam_max, np.zeros(in_features + 1)
             )
+            self.best_lambda = lam_max
             self.best_beta = self.betas[0]
             self._log(f"Lambda {lam_max}, Beta: {self.best_beta}")
         else:
@@ -82,21 +84,21 @@ class LogRegCCD:
             )
 
             # Find the best lambda
-            best_lambda = min(avg_loss, key=avg_loss.get)
+            self.best_lambda = min(avg_loss, key=avg_loss.get)
             self._log(
-                f"Avg Mean Deviance of best lambda ({best_lambda}): {avg_loss[best_lambda]}"
+                f"Avg Mean Deviance of best lambda ({self.best_lambda}): {avg_loss[self.best_lambda]}"
             )
 
             # Perform CCD on whole training dataset and save betas
             self.betas = np.empty((lam_count, in_features + 1))
             current_beta = np.zeros(in_features + 1)
             for idx, lam in enumerate(self.lambdas):
-                self.betas[idx] = self._coordinate_descent(
+                self.betas[idx], _, _ = self._coordinate_descent(
                     X_train, y_train, lam, current_beta
                 )
-                if lam == best_lambda:
+                if lam == self.best_lambda:
                     self.best_beta = self.betas[idx]
-
+                
     def validate(
         self,
         X_valid: NDArray[np.float64],
@@ -204,7 +206,7 @@ class LogRegCCD:
             current_beta = np.zeros(in_features + 1)
 
             for lam in lambdas:
-                new_beta = self._coordinate_descent(
+                new_beta, _, _ = self._coordinate_descent(
                     cw_X_train, cw_y_train, lam, current_beta
                 )
                 val_loss = self._evaluate_validation_loss(
@@ -246,8 +248,8 @@ class LogRegCCD:
         )
 
     def _coordinate_descent(
-        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=1000, eps=1e-10
-    ) -> NDArray[np.float64]:
+        self, X, y, lam: float, beta: NDArray[np.float64], max_iter=10000, eps=1e-10
+    ) -> tuple[NDArray[np.float64], list[float], list[NDArray[np.float64]]]:
         """
         Performs cyclical coordinate descent to optimize beta coefficients for logistic regression.
 
@@ -270,6 +272,9 @@ class LogRegCCD:
         atol = 1e-5
         l_old = float("inf")
         weights = np.repeat(0.25, n)
+
+        loss_values = []
+        beta_values = []
 
         for i in range(max_iter):
             posteriors = np.clip(self._sigmoid(X_ext @ beta), atol, 1.0 - atol)
@@ -296,6 +301,9 @@ class LogRegCCD:
             l = self._quadratic_approx_loss(
                 X_ext, beta, new_beta, weights, y_minus_posteriors, lam
             )
+            l = self._exact_loss(X_ext, y, new_beta, lam)
+            loss_values.append(l)
+            beta_values.append(new_beta.copy())
 
             # Check for convergence
             if abs(l - l_old) < eps:
@@ -304,7 +312,7 @@ class LogRegCCD:
 
             beta, l_old = new_beta, l  # Update beta and loss
 
-        return beta
+        return beta, loss_values, beta_values
 
     def _exact_loss(self, X, y, beta, lam) -> float:
         """Computes the exact logistic regression loss with L1 regularization."""
@@ -320,7 +328,7 @@ class LogRegCCD:
     ) -> float:
         """Computes the quadratic approximation of the logistic regression loss."""
         n = X.shape[0]
-        return (-1 / (2 * n)) * weights.T @ np.square(
+        return (1 / (2 * n)) * weights.T @ np.square(
             X @ beta + (y_minus_posteriors / weights) - X @ new_beta
         ) + lam * np.linalg.norm(new_beta[1:], ord=1)
 
@@ -350,19 +358,56 @@ class LogRegCCD:
     def _soft_thresh(self, z, gamma):
         return np.sign(z) * np.maximum(np.abs(z) - gamma, 0)
 
+    def plot_iter_values(self, X, y, path: None | str = None, figsize=(10,5)):
+        beta_init = np.zeros(X.shape[1] + 1, dtype=np.float64)  # Include intercept term
+        beta_opt, loss_values, beta_values = self._coordinate_descent(X, y, self.best_lambda, beta_init, max_iter=100)
+        
+        # Convert beta_values list to an array for easy plotting
+        beta_values = np.array(beta_values)
+        iterations = range(len(loss_values))
+        
+        # Plot loss function
+        plt.figure(figsize=figsize)
+        plt.subplot(1, 2, 1)
+        plt.plot(iterations, loss_values, label='Loss')
+        plt.xlabel('Iteration')
+        plt.ylabel('Loss')
+        plt.title('Loss function over iterations')
+        plt.legend()
+        
+        # Plot beta coefficients
+        plt.subplot(1, 2, 2)
+        for i in range(beta_values.shape[1]):
+            if i == 0:
+                plt.plot(iterations, beta_values[:, i], label=f'Beta {i}', color="black")
+            else:
+                plt.plot(iterations, beta_values[:, i], label=f'Beta {i}')
+        plt.xlabel('Iteration')
+        plt.ylabel('Beta values')
+        plt.title('Beta coefficients over iterations')
+        plt.legend()
+        if path is not None:
+            plt.savefig(path)
+        
+        plt.show()
+        return beta_opt
+
+
+
     def plot_lasso_path(self, path: None | str = None, figsize=(8,6)):
         """
         Plots and saves to file (if path specified) the Lasso path with log(lambda) on the x-axis and beta values on the y-axis.
         """
         plt.figure(figsize=figsize)
         for i in range(1, self.betas.shape[1]):
-            plt.plot(self.lambdas, self.betas[:, i], label=f"{i+1}")
+            plt.plot(self.lambdas, self.betas[:, i], label=f"Beta {i}")
 
         plt.xscale("log")
         plt.xlabel("lambda")
         plt.ylabel("Beta coefficients")
         plt.title("Lasso Regularization Path")
         plt.grid(True)
+        plt.legend()
         if path is not None:
             plt.savefig(path)
         plt.show()
